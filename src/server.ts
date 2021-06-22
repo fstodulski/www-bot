@@ -73,8 +73,8 @@ async function initialize() {
         if (!checkedLeads.includes(url)) {
           const subPage = await browser.newPage();
 
-          subPage.on("dialog", async (dialog) => {
-            await dialog.dismiss();
+          subPage.on("dialog", async ({accept}) => {
+            await accept();
 
             await subPage.close();
           });
