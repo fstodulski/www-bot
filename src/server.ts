@@ -25,7 +25,6 @@ async function initialize() {
 
   const buyLead = async () => {
     // Reset Filters
-
     await page.goto(systemLeadUrl);
     await page.$eval("[name=age-to]", (el: Element) =>
       el.setAttribute("value", "")
@@ -76,7 +75,8 @@ async function initialize() {
 
           subPage.on("dialog", async (dialog) => {
             await dialog.dismiss();
-            subPage.close();
+
+            await subPage.close();
           });
 
           await subPage.goto(url);
@@ -88,13 +88,9 @@ async function initialize() {
           checkedLeads.push(url);
 
           if (buyButton) {
-            buyButton.click();
-
-            if (i === leads.length - 1) {
-              setTimeout(() => buyLead(), 500);
-            }
+            await buyButton.click();
           } else {
-            subPage.close();
+            await subPage.close();
           }
         } else {
           setTimeout(() => buyLead(), 200);

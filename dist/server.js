@@ -14,6 +14,7 @@ const puppeteer_1 = require("puppeteer");
 dotenv_1.config();
 const { PASSWORD, LOGIN, MAX_AGE, MAX_PRICE } = process.env;
 const systemLeadUrl = "https://www.systemlead.pl/system/wszystkie_leady.php";
+const checkedLeads = [];
 function initialize() {
     return __awaiter(this, void 0, void 0, function* () {
         const browser = yield puppeteer_1.launch({
@@ -51,21 +52,27 @@ function initialize() {
             if (leads.length > 0) {
                 for (let i = 0; i < leads.length; i += 1) {
                     const url = leads[i];
-                    const subPage = yield browser.newPage();
-                    subPage.on("dialog", (dialog) => __awaiter(this, void 0, void 0, function* () {
-                        // await dialog.accept();
-                        // subPage.close();
-                    }));
-                    yield subPage.goto(url);
-                    const buyButton = yield subPage.$("#lead_lista_tu > tbody > tr > td > .przycisk");
-                    if (buyButton) {
-                        buyButton.click();
-                        if (i === leads.length - 1) {
-                            setTimeout(() => buyLead(), 500);
+                    if (!checkedLeads.includes(url)) {
+                        const subPage = yield browser.newPage();
+                        subPage.on("dialog", (dialog) => __awaiter(this, void 0, void 0, function* () {
+                            yield dialog.dismiss();
+                            yield subPage.close();
+                        }));
+                        yield subPage.goto(url);
+                        const buyButton = yield subPage.$("#lead_lista_tu > tbody > tr > td > .przycisk");
+                        checkedLeads.push(url);
+                        if (buyButton) {
+                            yield buyButton.click();
+                            if (i === leads.length - 1) {
+                                setTimeout(() => buyLead(), 500);
+                            }
+                        }
+                        else {
+                            yield subPage.close();
                         }
                     }
                     else {
-                        subPage.close();
+                        setTimeout(() => buyLead(), 200);
                     }
                 }
             }
