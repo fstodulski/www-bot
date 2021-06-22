@@ -82,10 +82,14 @@ async function initialize() {
           "#lead_lista_tu > tbody > tr > td > .przycisk"
         );
 
-        buyButton.click();
+        if (buyButton) {
+          buyButton.click();
 
-        if (i === leads.length - 1) {
-          setTimeout(() => buyLead(), 500);
+          if (i === leads.length - 1) {
+            setTimeout(() => buyLead(), 500);
+          }
+        } else {
+          subPage.close();
         }
       }
     } else {

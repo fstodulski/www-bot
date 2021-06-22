@@ -58,9 +58,14 @@ function initialize() {
                     }));
                     yield subPage.goto(url);
                     const buyButton = yield subPage.$("#lead_lista_tu > tbody > tr > td > .przycisk");
-                    buyButton.click();
-                    if (i === leads.length - 1) {
-                        setTimeout(() => buyLead(), 500);
+                    if (buyButton) {
+                        buyButton.click();
+                        if (i === leads.length - 1) {
+                            setTimeout(() => buyLead(), 500);
+                        }
+                    }
+                    else {
+                        subPage.close();
                     }
                 }
             }
