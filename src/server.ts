@@ -22,20 +22,20 @@ async function initialize() {
 
   await loginButton.click();
   await page.waitForNavigation();
+  await page.goto(systemLeadUrl);
 
   const buyLead = async () => {
     // Reset Filters
-    await page.goto(systemLeadUrl);
-    await page.$eval("[name=age-to]", (el: Element) =>
-      el.setAttribute("value", "")
+    await page.$eval(
+      "[name=age-to]",
+      (el: Element, value: string) => el.setAttribute("value", value),
+      MAX_AGE
     );
-    await page.$eval("[name=price-to]", (el: Element) =>
-      el.setAttribute("value", "")
+    await page.$eval(
+      "[name=price-to]",
+      (el: Element, value: string) => el.setAttribute("value", value),
+      MAX_PRICE
     );
-
-    // Fill Filters
-    await page.type("[name=age-to]", String(MAX_AGE));
-    await page.type("[name=price-to]", String(MAX_PRICE));
 
     // Click for apply button
     (await page.$("[name=filtr_leady]")).click();
@@ -94,6 +94,10 @@ async function initialize() {
           }
         } else {
           setTimeout(() => buyLead(), 200);
+        }
+
+        if (i === leads.length - 1) {
+          buyLead();
         }
       }
     } else {
