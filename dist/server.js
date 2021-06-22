@@ -27,14 +27,11 @@ function initialize() {
         yield page.type("#haslo", PASSWORD);
         yield loginButton.click();
         yield page.waitForNavigation();
+        yield page.goto(systemLeadUrl);
         const buyLead = () => __awaiter(this, void 0, void 0, function* () {
             // Reset Filters
-            yield page.goto(systemLeadUrl);
-            yield page.$eval("[name=age-to]", (el) => el.setAttribute("value", ""));
-            yield page.$eval("[name=price-to]", (el) => el.setAttribute("value", ""));
-            // Fill Filters
-            yield page.type("[name=age-to]", String(MAX_AGE));
-            yield page.type("[name=price-to]", String(MAX_PRICE));
+            yield page.$eval("[name=age-to]", (el, value) => el.setAttribute("value", value), MAX_AGE);
+            yield page.$eval("[name=price-to]", (el, value) => el.setAttribute("value", value), MAX_PRICE);
             // Click for apply button
             (yield page.$("[name=filtr_leady]")).click();
             const tableRows = yield page.$$("#lead_lista > tbody > tr");
@@ -54,8 +51,8 @@ function initialize() {
                     const url = leads[i];
                     if (!checkedLeads.includes(url)) {
                         const subPage = yield browser.newPage();
-                        subPage.on("dialog", (dialog) => __awaiter(this, void 0, void 0, function* () {
-                            yield dialog.dismiss();
+                        subPage.on("dialog", ({ accept }) => __awaiter(this, void 0, void 0, function* () {
+                            yield accept();
                             yield subPage.close();
                         }));
                         yield subPage.goto(url);
@@ -63,9 +60,6 @@ function initialize() {
                         checkedLeads.push(url);
                         if (buyButton) {
                             yield buyButton.click();
-                            if (i === leads.length - 1) {
-                                setTimeout(() => buyLead(), 500);
-                            }
                         }
                         else {
                             yield subPage.close();
@@ -73,6 +67,9 @@ function initialize() {
                     }
                     else {
                         setTimeout(() => buyLead(), 200);
+                    }
+                    if (i === leads.length - 1) {
+                        buyLead();
                     }
                 }
             }
