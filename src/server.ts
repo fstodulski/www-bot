@@ -5,6 +5,8 @@ config();
 const { PASSWORD, LOGIN, MAX_AGE, MAX_PRICE } = process.env;
 const systemLeadUrl = "https://www.systemlead.pl/system/wszystkie_leady.php";
 
+const checkedLeads: Array<string> = [];
+
 async function initialize() {
   const browser = await launch({
     headless: false,
@@ -69,27 +71,33 @@ async function initialize() {
       for (let i = 0; i < leads.length; i += 1) {
         const url = leads[i];
 
-        const subPage = await browser.newPage();
+        if (!checkedLeads.includes(url)) {
+          const subPage = await browser.newPage();
 
-        subPage.on("dialog", async (dialog) => {
-          // await dialog.accept();
-          // subPage.close();
-        });
+          subPage.on("dialog", async (dialog) => {
+            await dialog.dismiss();
+            subPage.close();
+          });
 
-        await subPage.goto(url);
+          await subPage.goto(url);
 
-        const buyButton: ElementHandle = await subPage.$(
-          "#lead_lista_tu > tbody > tr > td > .przycisk"
-        );
+          const buyButton: ElementHandle = await subPage.$(
+            "#lead_lista_tu > tbody > tr > td > .przycisk"
+          );
 
-        if (buyButton) {
-          buyButton.click();
+          checkedLeads.push(url);
 
-          if (i === leads.length - 1) {
-            setTimeout(() => buyLead(), 500);
+          if (buyButton) {
+            buyButton.click();
+
+            if (i === leads.length - 1) {
+              setTimeout(() => buyLead(), 500);
+            }
+          } else {
+            subPage.close();
           }
         } else {
-          subPage.close();
+          setTimeout(() => buyLead(), 200);
         }
       }
     } else {
