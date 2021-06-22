@@ -72,8 +72,8 @@ async function initialize() {
         const subPage = await browser.newPage();
 
         subPage.on("dialog", async (dialog) => {
-          await dialog.dismiss();
-          subPage.close();
+          // await dialog.accept();
+          // subPage.close();
         });
 
         await subPage.goto(url);

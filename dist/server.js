@@ -53,8 +53,8 @@ function initialize() {
                     const url = leads[i];
                     const subPage = yield browser.newPage();
                     subPage.on("dialog", (dialog) => __awaiter(this, void 0, void 0, function* () {
-                        yield dialog.dismiss();
-                        subPage.close();
+                        // await dialog.accept();
+                        // subPage.close();
                     }));
                     yield subPage.goto(url);
                     const buyButton = yield subPage.$("#lead_lista_tu > tbody > tr > td > .przycisk");
