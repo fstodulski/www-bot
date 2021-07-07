@@ -24,8 +24,7 @@ async function initialize() {
   await page.waitForNavigation();
   await page.goto(systemLeadUrl);
 
-  const buyLead = async () => {
-    // Reset Filters
+  const setFiltersValue = async () => {
     await page.$eval(
       "[name=age-to]",
       (el: Element, value: string) => el.setAttribute("value", value),
@@ -36,6 +35,12 @@ async function initialize() {
       (el: Element, value: string) => el.setAttribute("value", value),
       MAX_PRICE
     );
+  };
+
+  const buyLead = async () => {
+    await page.goto(systemLeadUrl);
+    // Reset Filters
+    await setFiltersValue();
 
     // Click for apply button
     (await page.$("[name=filtr_leady]")).click();
@@ -73,8 +78,8 @@ async function initialize() {
         if (!checkedLeads.includes(url)) {
           const subPage = await browser.newPage();
 
-          subPage.on("dialog", async ({accept}) => {
-            await accept();
+          subPage.on("dialog", async (dialog) => {
+            await dialog.accept();
 
             await subPage.close();
           });
@@ -97,7 +102,7 @@ async function initialize() {
         }
 
         if (i === leads.length - 1) {
-          buyLead();
+          await buyLead();
         }
       }
     } else {
