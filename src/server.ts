@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { ElementHandle, launch } from "puppeteer";
 
 config();
+
 const { PASSWORD, LOGIN, MAX_AGE, MAX_PRICE } = process.env;
 const systemLeadUrl = "https://www.systemlead.pl/system/wszystkie_leady.php";
 
@@ -98,7 +99,7 @@ async function initialize() {
             await subPage.close();
           }
         } else {
-          setTimeout(() => buyLead(), 200);
+          setTimeout(async () => await buyLead(), 200);
         }
 
         if (i === leads.length - 1) {
@@ -106,11 +107,11 @@ async function initialize() {
         }
       }
     } else {
-      setTimeout(() => buyLead(), 200);
+      setTimeout(async () => await buyLead(), 200);
     }
   };
 
-  buyLead();
+  await buyLead();
 }
 
-initialize();
+await initialize();
