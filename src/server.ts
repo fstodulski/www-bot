@@ -114,4 +114,4 @@ async function initialize() {
   await buyLead();
 }
 
-await initialize();
+initialize();
