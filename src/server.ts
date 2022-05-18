@@ -1,34 +1,15 @@
 import { config } from "dotenv";
-import { ElementHandle, launch } from "puppeteer";
+import { launch, Page } from "puppeteer";
 import { Subpage } from "./subpage";
 
 config();
-
-const debounce = (func: any, wait: number) => {
-  let timeout: any;
-
-  return function executedFunction(...args: any) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
 
 const { PASSWORD, LOGIN, MAX_AGE, MAX_PRICE } = process.env;
 const systemLeadUrl = "https://www.systemlead.pl/system/wszystkie_leady.php";
 
 const checkedLeads: Array<string> = [];
 
-async function initialize() {
-  const browser = await launch({
-    headless: false,
-  });
-
-  const page = await browser.newPage();
+const login = async (page: Page): Promise<void> => {
   await page.goto("https://www.systemlead.pl/");
 
   const loginButton = await page.$("#zaloguj");
@@ -37,29 +18,42 @@ async function initialize() {
   await page.type("#haslo", PASSWORD);
 
   await loginButton.click();
+};
+
+const setFiltersValue = async (page: Page) => {
+  await page.select(".pagination-size", "100");
+  await page.$eval(
+    "[name=age-to]",
+    (el: Element, value: string) => el.setAttribute("value", value),
+    MAX_AGE
+  );
+  await page.$eval(
+    "[name=price-to]",
+    (el: Element, value: string) => el.setAttribute("value", value),
+    MAX_PRICE
+  );
+};
+
+async function initialize() {
+  const browser = await launch({
+    headless: false,
+    defaultViewport: {
+      width: 1640,
+      height: 900,
+    },
+    ignoreHTTPSErrors: true,
+  });
+
+  const page = await browser.newPage();
+
+  await login(page);
+
   await page.waitForNavigation();
   await page.goto(systemLeadUrl);
-
-  const setFiltersValue = async () => {
-    await page.select(".pagination-size", "100");
-    await page.$eval(
-      "[name=age-to]",
-      (el: Element, value: string) => el.setAttribute("value", value),
-      MAX_AGE
-    );
-    await page.$eval(
-      "[name=price-to]",
-      (el: Element, value: string) => el.setAttribute("value", value),
-      MAX_PRICE
-    );
-  };
+  // Reset Filters
+  await setFiltersValue(page);
 
   const buyLead = async () => {
-    await page.goto(systemLeadUrl);
-
-    // Reset Filters
-    await setFiltersValue();
-
     // Click for apply button
     const filterBtn = await page.$(".filtruj");
     await filterBtn.click();
@@ -100,6 +94,7 @@ async function initialize() {
       for (let i = 0; i < leads.length; i += 1) {
         const url = leads[i];
 
+        console.log(url, checkedLeads);
         if (!checkedLeads.includes(url)) {
           const subPage = await browser.newPage();
 
@@ -132,15 +127,13 @@ async function initialize() {
 
           checkedLeads.push(url);
         } else {
-          setTimeout(async () => await buyLead(), 100);
+          await buyLead();
         }
 
         if (i === leads.length - 1) {
           await buyLead();
         }
       }
-    } else {
-      setTimeout(async () => await buyLead(), 100);
     }
   };
 
