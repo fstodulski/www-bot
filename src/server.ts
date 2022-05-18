@@ -3,6 +3,20 @@ import { ElementHandle, launch } from "puppeteer";
 
 config();
 
+const debounce = (func: any, wait: number) => {
+  let timeout: any;
+
+  return function executedFunction(...args: any) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 const { PASSWORD, LOGIN, MAX_AGE, MAX_PRICE } = process.env;
 const systemLeadUrl = "https://www.systemlead.pl/system/wszystkie_leady.php";
 
@@ -40,32 +54,40 @@ async function initialize() {
 
   const buyLead = async () => {
     await page.goto(systemLeadUrl);
+
     // Reset Filters
     await setFiltersValue();
 
     // Click for apply button
-    (await page.$("[name=filtr_leady]")).click();
+    const filterBtn = await page.$(".filtruj");
+    await filterBtn.click();
 
-    const tableRows = await page.$$("#lead_lista > tbody > tr");
+    await page.waitForSelector("#lead_lista > tbody > .lead-row");
+
+    const leadList = await page.$("#lead_lista");
+
+    const tableBody = await leadList.$("tbody");
+
+    const tableRows = await tableBody.$$(".lead-row");
 
     const correctLeadsUrl: Array<string> = await Promise.all(
       tableRows.map(async (row): Promise<string> => {
-        const priceTd = await row.$(".koszt");
-        const age: string = await page.evaluate(
-          (singleRow) => singleRow.getAttribute("data-wiek"),
-          row
-        );
+        const priceSpan = await row.$(".cena");
+
         const priceValue: string = await (
-          await priceTd.getProperty("textContent")
+          await priceSpan.getProperty("textContent")
         ).jsonValue();
 
-        if (
-          parseInt(age) <= parseInt(MAX_AGE) &&
-          parseInt(priceValue) <= parseInt(MAX_PRICE)
-        ) {
-          const takeALookButton = await row.$(".przycisk > a");
+        if (row) {
+          if (parseInt(priceValue) <= parseInt(MAX_PRICE)) {
+            const takeALookButton = await row.$(".przycisk > a");
 
-          return await (await takeALookButton.getProperty("href")).jsonValue();
+            return await (
+              await takeALookButton.getProperty("href")
+            ).jsonValue();
+          }
+        } else {
+          throw Error("Cant find Row");
         }
       })
     );
@@ -81,14 +103,33 @@ async function initialize() {
 
           subPage.on("dialog", async (dialog) => {
             await dialog.accept();
-
             await subPage.close();
           });
 
           await subPage.goto(url);
 
-          const buyButton: ElementHandle = await subPage.$(
-            "#lead_lista_tu > tbody > tr > td > .przycisk"
+          const agencies = await subPage.$$("#lead_lista_tu > tbody > tr");
+
+          const generali = agencies.map(async (row) => {
+            const td = await row.$$("td");
+            const agencyName = await (
+              await td[1].getProperty("textContent")
+            ).jsonValue<string>();
+
+            if (agencyName.includes("GENERALI")) {
+              return row;
+            } else {
+              return undefined;
+            }
+          });
+
+          const [generaliRow] = (await Promise.all(generali)).filter(
+            (res) => res !== undefined
+          );
+          console.log(await generaliRow.getProperty("innerHTML"));
+
+          const buyButton: ElementHandle = await generaliRow.$(
+            ".purchase_button"
           );
 
           checkedLeads.push(url);
