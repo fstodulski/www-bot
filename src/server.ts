@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { ElementHandle, launch } from "puppeteer";
+import { Subpage } from "./subpage";
 
 config();
 
@@ -40,6 +41,7 @@ async function initialize() {
   await page.goto(systemLeadUrl);
 
   const setFiltersValue = async () => {
+    await page.select(".pagination-size", "100");
     await page.$eval(
       "[name=age-to]",
       (el: Element, value: string) => el.setAttribute("value", value),
@@ -108,39 +110,29 @@ async function initialize() {
 
           await subPage.goto(url);
 
-          const agencies = await subPage.$$("#lead_lista_tu > tbody > tr");
+          const leadPage = new Subpage(subPage, url);
 
-          const generali = agencies.map(async (row) => {
-            const td = await row.$$("td");
-            const agencyName = await (
-              await td[1].getProperty("textContent")
-            ).jsonValue<string>();
+          const scrap = async () => {
+            const { isSold, buyButton } = await leadPage.scrap();
 
-            if (agencyName.includes("GENERALI")) {
-              return row;
-            } else {
-              return undefined;
+            if (!isSold) {
+              await scrap();
             }
-          });
 
-          const [generaliRow] = (await Promise.all(generali)).filter(
-            (res) => res !== undefined
-          );
-          console.log(await generaliRow.getProperty("innerHTML"));
+            if (isSold || !buyButton) {
+              await subPage.close();
+            }
 
-          const buyButton: ElementHandle = await generaliRow.$(
-            ".purchase_button"
-          );
+            if (buyButton) {
+              await buyButton.click();
+            }
+          };
+
+          await scrap();
 
           checkedLeads.push(url);
-
-          if (buyButton) {
-            await buyButton.click();
-          } else {
-            await subPage.close();
-          }
         } else {
-          setTimeout(async () => await buyLead(), 200);
+          setTimeout(async () => await buyLead(), 100);
         }
 
         if (i === leads.length - 1) {
@@ -148,7 +140,7 @@ async function initialize() {
         }
       }
     } else {
-      setTimeout(async () => await buyLead(), 200);
+      setTimeout(async () => await buyLead(), 100);
     }
   };
 
